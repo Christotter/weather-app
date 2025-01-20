@@ -1,22 +1,43 @@
 import React, { useState, useEffect } from 'react';
 
 const App = () => {
+  const [locations, setLocations] = useState([]);
   const [hottestLocation, setHottestLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [allTemperatures, setAllTemperatures] = useState([]);
 
-  const locations = [
-    { name: "Paris", lat: 48.8566, lon: 2.3522 },
-    { name: "New York", lat: 40.7128, lon: -74.0060 },
-    { name: "Tokyo", lat: 35.6895, lon: 139.6917 },
-    { name: "Sydney", lat: -33.8688, lon: 151.2093 },
-    { name: "Székesfehérvár", lat: 47.1910, lon: 18.4131 },
-    { name: "Gland", lat: 46.4167, lon: 6.2667 },
-    { name: "Lausanne", lat: 46.5197, lon: 6.6333 },
-    { name: "Abidjan", lat: 5.3453, lon: -4.0244 }
-  ];
+  const continentsCoordinates = {
+    Africa: { latMin: -37, latMax: 37, lonMin: -18, lonMax: 51 },
+    Asia: { latMin: 10, latMax: 80, lonMin: 60, lonMax: 180 },
+    Europe: { latMin: 35, latMax: 72, lonMin: -31, lonMax: 40 },
+    NorthAmerica: { latMin: 24, latMax: 72, lonMin: -170, lonMax: -60 },
+    SouthAmerica: { latMin: -55, latMax: 12, lonMin: -80, lonMax: -35 },
+    Oceania: { latMin: -50, latMax: -10, lonMin: 120, lonMax: 180 },
+  };
 
+  // Fonction pour générer des coordonnées aléatoires
+  const getRandomCoordinates = (continent) => {
+    const { latMin, latMax, lonMin, lonMax } = continentsCoordinates[continent];
+    const lat = (Math.random() * (latMax - latMin)) + latMin;
+    const lon = (Math.random() * (lonMax - lonMin)) + lonMin;
+    return { lat, lon };
+  };
+
+  // Fonction pour récupérer la ville et le pays les plus proches d'une coordonnée avec GeoNames
+  const getCityFromCoordinates = async (lat, lon) => {
+    const username = "christotter"; // Ton nom d'utilisateur GeoNames
+    const response = await fetch(`http://api.geonames.org/findNearbyPlaceNameJSON?lat=${lat}&lng=${lon}&username=${username}`);
+    const data = await response.json();
+    if (data.geonames && data.geonames[0]) {
+      return {
+        name: data.geonames[0].name,
+        country: data.geonames[0].countryName,
+      }; // Retourner le nom de la ville et du pays
+    }
+    return null;
+  };
+
+  // Fonction pour récupérer la température
   const fetchTemperature = async (lat, lon) => {
     try {
       const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
@@ -31,21 +52,34 @@ const App = () => {
   const getHottestLocation = async () => {
     try {
       setLoading(true);
-      const temperatures = await Promise.all(
-        locations.map(async (location) => {
-          const temp = await fetchTemperature(location.lat, location.lon);
-          return { name: location.name, temperature: temp };
-        })
-      );
+      const selectedLocations = [];
 
-      // Filtrer les lieux avec des températures valides
-      const validTemperatures = temperatures.filter(item => item.temperature !== null);
+      // Sélectionner un lieu pour chaque continent
+      for (let continent of Object.keys(continentsCoordinates)) {
+        const { lat, lon } = getRandomCoordinates(continent);
+        const cityData = await getCityFromCoordinates(lat, lon);
+        if (cityData) {
+          const temperature = await fetchTemperature(lat, lon);
+          selectedLocations.push({
+            name: cityData.name,
+            country: cityData.country,
+            lat,
+            lon,
+            temperature,
+          });
+        } else {
+          selectedLocations.push({
+            continent,
+            message: `No location found for ${continent}`,
+          });
+        }
+      }
 
-      // Trouver la température la plus élevée
-      const hottest = validTemperatures.reduce((max, current) => (current.temperature > max.temperature ? current : max), validTemperatures[0]);
+      setLocations(selectedLocations);
 
+      // Trouver la ville la plus chaude
+      const hottest = selectedLocations.filter(item => item.temperature).reduce((max, current) => (current.temperature > max.temperature ? current : max), selectedLocations[0]);
       setHottestLocation(hottest);
-      setAllTemperatures(validTemperatures); // Stocker toutes les températures pour affichage
     } catch (error) {
       setError("Failed to fetch data.");
       console.error("Error:", error);
@@ -69,14 +103,18 @@ const App = () => {
         <div>
           {hottestLocation && (
             <div>
-              <h2>The hottest location is {hottestLocation.name} with a temperature of {hottestLocation.temperature}°C.</h2>
+              <h2>The hottest location is {hottestLocation.name} ({hottestLocation.country}) with a temperature of {hottestLocation.temperature}°C.</h2>
             </div>
           )}
-          <h3>Temperatures of all locations:</h3>
+          <h3>Locations from each continent:</h3>
           <ul>
-            {allTemperatures.map((location) => (
-              <li key={location.name}>
-                {location.name}: {location.temperature}°C
+            {locations.map((location, index) => (
+              <li key={index}>
+                {location.message ? (
+                  <span>{location.message}</span>
+                ) : (
+                  <span>{location.name}, {location.country}: {location.temperature}°C</span>
+                )}
               </li>
             ))}
           </ul>
