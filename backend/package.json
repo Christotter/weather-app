@@ -1,16 +1,16 @@
 {
-  "name": "backend",
+  "type": "module",
+  "name": "weather-app-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Backend for weather app",
+  "main": "db.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node testConnection.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "axios": "^1.7.9",
-    "express": "^4.21.2"
+    "dotenv": "^16.0.0",
+    "express": "^4.21.2",
+    "mongodb": "^5.3.0",
+    "node-fetch": "^3.3.2"
   }
 }
