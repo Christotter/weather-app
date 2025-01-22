@@ -22,6 +22,19 @@ export async function connectToDB() {
   }
 }
 
+// Nouvelle fonction pour sauvegarder une localisation
+export async function saveLocation(location) {
+  try {
+    console.log("Tentative d'accès à la collection 'locations'");
+    const collection = db.collection('locations');
+    console.log("Insertion dans la collection : ", location);
+    await collection.insertOne(location);
+    console.log("Localisation sauvegardée avec succès");
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde de la localisation :", error);
+  }
+}
+
 // Fonction pour obtenir la température et la ville à partir des coordonnées
 export async function getLocationData(lat, lon) {
     const username = process.env.GEONAMES_USERNAME;
@@ -120,6 +133,13 @@ export async function saveQueryResult({ lat, lon, cityName, countryName, tempera
     console.log('Saved query result to database:', result);
   }
   
+// Fonction pour récupérer la base de données connectée
+export function getDatabase() {
+  if (!db) {
+    throw new Error('La base de données n’est pas connectée.');
+  }
+  return db;
+}
 
 // Fonction pour fermer la connexion à la base de données
 export async function closeDBConnection() {
@@ -128,3 +148,4 @@ export async function closeDBConnection() {
     console.log('Connexion à la base de données fermée');
   }
 }
+

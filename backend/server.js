@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { connectToDB, getLocationData, getRandomCoordinates, closeDBConnection, saveQueryResult } from './db.js';
+import { connectToDB, getLocationData, getRandomCoordinates, closeDBConnection, saveLocation, saveQueryResult, getDatabase } from './db.js';
 
 dotenv.config(); // Charger les variables d'environnement
 
@@ -19,6 +19,44 @@ app.use(express.json()); // Pour traiter les requêtes JSON
 connectToDB()
   .then(() => console.log('Connexion à MongoDB réussie.'))
   .catch((err) => console.error('Erreur de connexion à MongoDB:', err));
+
+
+
+// Endpoint pour tester l’écriture dans MongoDB
+app.post('/api/test-db-write', async (req, res) => {
+  try {
+    const db = getDatabase(); // Récupère la base de données connectée
+    const collection = db.collection('testCollection'); // Utilise une collection appelée testCollection
+
+    const document = {
+      testField: 'Hello, MongoDB!',
+      timestamp: new Date(),
+    };
+
+    const result = await collection.insertOne(document); // Insère un document dans la collection
+    console.log('Document inséré :', result);
+
+    res.status(201).json({ message: 'Document inséré avec succès', result });
+  } catch (error) {
+    console.error('Erreur lors de l’insertion dans la base :', error);
+    res.status(500).json({ error: 'Erreur lors de l’insertion dans la base' });
+  }
+});
+
+
+
+
+// Endpoint pour ajouter une localisation
+app.post('/api/locations', async (req, res) => {
+  const location = req.body; // Récupère les données envoyées par le client
+  try {
+    await saveLocation(location);
+    res.status(201).json({ message: 'Localisation enregistrée avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde de la localisation :', error);
+    res.status(500).json({ error: 'Erreur lors de la sauvegarde de la localisation.' });
+  }
+});
 
 // Endpoint pour obtenir la localisation la plus chaude et toutes les localisations
 app.get('/api/hottest-location', async (req, res) => {
@@ -102,8 +140,6 @@ app.get('/api/hottest-location', async (req, res) => {
   }
 });
 
-
-
 // Lancer le serveur
 const server = app.listen(PORT, () => {
   console.log(`Serveur backend en écoute sur http://localhost:${PORT}`);
@@ -118,3 +154,4 @@ process.on('SIGINT', async () => {
     process.exit(0);
   });
 });
+
