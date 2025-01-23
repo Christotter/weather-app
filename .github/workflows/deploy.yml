@@ -19,3 +19,10 @@ jobs:
         run: |
           docker-compose pull
           docker-compose up -d --build
+
+      # 3. Créer un fichier texte avec les logs du déploiement
+      - name: Create deployment log
+        run: |
+          echo "Deployment Logs - $(date)" > /home/cjohnson/Documents/logs/deployment-logs.txt
+          echo "Backend and Frontend deployed successfully." >> /home/cjohnson/Documents/logs/deployment-logs.txt
+          echo "Deployed on $(hostname)" >> /home/cjohnson/Documents/logs/deployment-logs.txt
