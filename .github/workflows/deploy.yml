@@ -1,0 +1,21 @@
+name: Deploy Weather App
+
+on:
+  push:
+    branches:
+      - main # Déclenche le workflow à chaque push sur la branche "main"
+
+jobs:
+  deploy:
+    runs-on: self-hosted # Spécifie que le workflow s'exécute sur ton self-hosted runner
+
+    steps:
+      # 1. Cloner le dépôt
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Construire et déployer avec Docker Compose
+      - name: Deploy application
+        run: |
+          docker-compose pull
+          docker-compose up -d --build

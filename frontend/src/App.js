@@ -28,7 +28,7 @@ const App = () => {
 
   return (
     <div>
-      <h1>Hottest Location</h1>
+      <h1>Hottest Location V16.26</h1>
       {loading ? (
         <p>Loading...</p>
       ) : error ? (
